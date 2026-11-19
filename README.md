@@ -1,5 +1,4 @@
 # Product-returns-and-refund-analysis
-# Product Returns and Refund Analysis
 
 ## 1. Project Overview
 
