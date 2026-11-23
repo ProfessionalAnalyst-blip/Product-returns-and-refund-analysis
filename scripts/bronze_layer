@@ -1,0 +1,147 @@
+BRONZE LAYER - DATA LOADING
+
+Purpose:
+This script creates a Bronze schema and a table to store raw
+e-commerce orders, customer, product, delivery, returns, and
+refund data.
+
+What this script does:
+
+Creates the Bronze schema if needed.
+
+Drops the existing returnstable table if it already exists.
+
+Creates a new table with all columns as VARCHAR(MAX) to
+preserve the raw data without conversion errors.
+
+Creates a stored procedure to load data from the CSV file.
+
+Truncates the table before each load to avoid duplicate data.
+
+Uses BULK INSERT to load the CSV data into the Bronze table.
+
+There was problem in loading the datatype to SQL so i set all the datatype to nvarchar(max) 
+it was giving the datatype convert error 
+
+The Bronze layer stores raw data before cleaning,
+transformations, and further analysis in the Silver and Gold
+layers.
+
+============================================================
+*/
+
+ ============================================================
+ 1. CREATE BRONZE SCHEMA
+ ============================================================
+
+CREATE SCHEMA bronze;
+
+ ============================================================
+ 2. DROP TABLE IF IT ALREADY EXISTS
+ ============================================================
+
+IF OBJECT_ID ('bronze.returnstable','U') IS NOT NULL
+DROP TABLE bronze.returnstable;
+
+ ============================================================
+ 3. CREATE BRONZE TABLE
+ Stores raw e-commerce data without applying transformations.
+ ============================================================
+
+CREATE TABLE bronze.returnstable
+(
+order_id VARCHAR(MAX) NULL,
+order_item_id VARCHAR(MAX) NULL,
+order_datetime VARCHAR(MAX) NULL,
+customer_id VARCHAR(MAX) NULL,
+gender VARCHAR(MAX) NULL,
+age VARCHAR(MAX) NULL,
+city VARCHAR(MAX) NULL,
+state VARCHAR(MAX) NULL,
+region VARCHAR(MAX) NULL,
+city_tier VARCHAR(MAX) NULL,
+signup_date VARCHAR(MAX) NULL,
+is_plus_member VARCHAR(MAX) NULL,
+sale_event VARCHAR(MAX) NULL,
+device VARCHAR(MAX) NULL,
+payment_method VARCHAR(MAX) NULL,
+coupon_used VARCHAR(MAX) NULL,
+coupon_discount VARCHAR(MAX) NULL,
+shipping_fee VARCHAR(MAX) NULL,
+cod_fee VARCHAR(MAX) NULL,
+items_count VARCHAR(MAX) NULL,
+order_value VARCHAR(MAX) NULL,
+amount_paid VARCHAR(MAX) NULL,
+product_id VARCHAR(MAX) NULL,
+category VARCHAR(MAX) NULL,
+sub_category VARCHAR(MAX) NULL,
+brand VARCHAR(MAX) NULL,
+is_size_based VARCHAR(MAX) NULL,
+product_avg_rating VARCHAR(MAX) NULL,
+product_rating_count VARCHAR(MAX) NULL,
+seller_id VARCHAR(MAX) NULL,
+seller_rating VARCHAR(MAX) NULL,
+fulfilled_by VARCHAR(MAX) NULL,
+quantity VARCHAR(MAX) NULL,
+mrp VARCHAR(MAX) NULL,
+discount_pct VARCHAR(MAX) NULL,
+selling_price VARCHAR(MAX) NULL,
+item_total VARCHAR(MAX) NULL,
+courier_partner VARCHAR(MAX) NULL,
+promised_delivery_days VARCHAR(MAX) NULL,
+shipped_datetime VARCHAR(MAX) NULL,
+delivered_datetime VARCHAR(MAX) NULL,
+actual_delivery_days VARCHAR(MAX) NULL,
+is_late_delivery VARCHAR(MAX) NULL,
+order_status VARCHAR(MAX) NULL,
+cancel_reason VARCHAR(MAX) NULL,
+item_status VARCHAR(MAX) NULL,
+is_returned VARCHAR(MAX) NULL,
+review_rating VARCHAR(MAX) NULL,
+return_id VARCHAR(MAX) NULL,
+return_requested_date VARCHAR(MAX) NULL,
+days_to_return VARCHAR(MAX) NULL,
+return_reason VARCHAR(MAX) NULL,
+return_status VARCHAR(MAX) NULL,
+refund_mode VARCHAR(MAX) NULL,
+refund_amount VARCHAR(MAX) NULL,
+refund_days VARCHAR(MAX) NULL
+);
+
+ ============================================================
+4. CREATE STORED PROCEDURE FOR DATA LOADING
+============================================================
+
+CREATE OR ALTER PROCEDURE bronze.load_layer AS
+BEGIN
+
+ ========================================================
+ 5. TRUNCATE TABLE BEFORE LOADING
+ Removes existing records to prevent duplicate data.
+========================================================
+
+TRUNCATE TABLE bronze.returnstable;
+
+
+ ========================================================
+ 6. BULK INSERT RAW DATA FROM CSV FILE
+ ========================================================
+
+BULK INSERT bronze.returnstable 
+FROM 'india_ecommerce_orders_returns.csv'
+WITH ( 
+    FORMAT = 'CSV',
+    FIRSTROW = 2,
+    FIELDTERMINATOR = ',',
+    ROWTERMINATOR = '0x0A',
+    TABLOCK
+);
+
+END;
+
+ ============================================================
+ 7. EXECUTE STORED PROCEDURE
+ Loads the CSV data into the Bronze table.
+ ============================================================
+
+EXEC bronze.load_layer;
