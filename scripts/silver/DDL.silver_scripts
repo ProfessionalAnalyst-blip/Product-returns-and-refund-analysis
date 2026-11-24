@@ -1,0 +1,249 @@
+
+/*
+    PURPOSE:
+    Create the Silver-layer relational database schema for an
+    e-commerce analytics project.
+
+    The schema separates customer, order, product, seller,
+    order item, return, refund, and review information into
+    related tables.
+
+    Primary keys enforce record uniqueness, while foreign keys
+    maintain referential integrity between related entities.
+*/
+
+-- =========================================================
+-- CREATE SILVER SCHEMA
+-- =========================================================
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.schemas
+    WHERE name = 'silver'
+)
+    EXEC('CREATE SCHEMA silver');
+
+
+-- =========================================================
+-- 2. DROP EXISTING TABLES
+-- =========================================================
+-- Child tables must be dropped before parent tables because
+-- foreign keys prevent referenced tables from being dropped.
+
+IF OBJECT_ID('silver.refunds', 'U') IS NOT NULL
+    DROP TABLE silver.refunds;
+
+IF OBJECT_ID('silver.returns', 'U') IS NOT NULL
+    DROP TABLE silver.returns;
+
+IF OBJECT_ID('silver.reviews', 'U') IS NOT NULL
+    DROP TABLE silver.reviews;
+
+IF OBJECT_ID('silver.order_items', 'U') IS NOT NULL
+    DROP TABLE silver.order_items;
+
+IF OBJECT_ID('silver.orders', 'U') IS NOT NULL
+    DROP TABLE silver.orders;
+
+IF OBJECT_ID('silver.customers', 'U') IS NOT NULL
+    DROP TABLE silver.customers;
+
+IF OBJECT_ID('silver.products', 'U') IS NOT NULL
+    DROP TABLE silver.products;
+
+IF OBJECT_ID('silver.sellers', 'U') IS NOT NULL
+    DROP TABLE silver.sellers;
+
+
+-- =========================================================
+-- 3. CREATE CUSTOMERS TABLE
+-- =========================================================
+
+CREATE TABLE silver.customers
+(
+    customer_id       NVARCHAR(50),
+    gender            NVARCHAR(20),
+    age               INT,
+    city              NVARCHAR(60),
+    state             NVARCHAR(60),
+    region            NVARCHAR(50),
+    city_tier         NVARCHAR(20),
+    signup_date       DATE,
+    is_plus_member    BIT,
+
+    CONSTRAINT PK_customers
+        PRIMARY KEY (customer_id)
+);
+
+
+-- =========================================================
+-- 4. CREATE ORDERS TABLE
+-- =========================================================
+
+CREATE TABLE silver.orders
+(
+    order_id          NVARCHAR(50),
+    customer_id       NVARCHAR(50),
+    order_datetime    DATETIME2,
+    sale_event        NVARCHAR(80),
+    device            NVARCHAR(50),
+    payment_method    NVARCHAR(50),
+    coupon_used       NVARCHAR(50),
+    coupon_discount   DECIMAL(12,2),
+    shipping_fee      DECIMAL(12,2),
+    cod_fee           DECIMAL(12,2),
+    items_count       INT,
+    order_value       DECIMAL(12,2),
+    amount_paid       DECIMAL(12,2),
+    order_status      NVARCHAR(50),
+    cancel_reason     NVARCHAR(255),
+
+    CONSTRAINT PK_orders
+        PRIMARY KEY (order_id),
+
+    -- Every order must reference an existing customer.
+    CONSTRAINT FK_orders_customers
+        FOREIGN KEY (customer_id)
+        REFERENCES silver.customers(customer_id)
+);
+
+
+-- =========================================================
+-- 5. CREATE PRODUCTS TABLE
+-- =========================================================
+
+CREATE TABLE silver.products
+(
+    product_id             NVARCHAR(50),
+    category               NVARCHAR(50),
+    sub_category           NVARCHAR(50),
+    brand                  NVARCHAR(50),
+    is_size_based          BIT,
+    product_avg_rating     DECIMAL(4,2),
+    product_rating_count   INT,
+
+    CONSTRAINT PK_products
+        PRIMARY KEY (product_id)
+);
+
+
+-- =========================================================
+-- 6. CREATE SELLERS TABLE
+-- =========================================================
+
+CREATE TABLE silver.sellers
+(
+    seller_id       NVARCHAR(50),
+    seller_rating   DECIMAL(4,2),
+    fulfilled_by    NVARCHAR(50),
+
+    CONSTRAINT PK_sellers
+        PRIMARY KEY (seller_id)
+);
+
+
+-- =========================================================
+-- 7. CREATE ORDER ITEMS TABLE
+-- =========================================================
+
+CREATE TABLE silver.order_items
+(
+    order_id                 NVARCHAR(50),
+    order_item_id            NVARCHAR(50),
+    product_id               NVARCHAR(50),
+    seller_id                NVARCHAR(50),
+    quantity                 INT,
+    mrp                      DECIMAL(12,2),
+    discount_pct             DECIMAL(6,2),
+    selling_price            DECIMAL(12,2),
+    item_total               DECIMAL(12,2),
+    courier_partner          NVARCHAR(60),
+    promised_delivery_days   INT,
+    shipped_datetime         DATETIME2,
+    delivered_datetime       DATETIME2,
+    actual_delivery_days     INT,
+    is_late_delivery         BIT,
+    item_status              NVARCHAR(50),
+    is_returned              BIT,
+
+    -- Composite key: an order can contain multiple items.
+    CONSTRAINT PK_order_items
+        PRIMARY KEY (order_id, order_item_id),
+
+    CONSTRAINT FK_order_items_orders
+        FOREIGN KEY (order_id)
+        REFERENCES silver.orders(order_id),
+
+    CONSTRAINT FK_order_items_products
+        FOREIGN KEY (product_id)
+        REFERENCES silver.products(product_id),
+
+    CONSTRAINT FK_order_items_sellers
+        FOREIGN KEY (seller_id)
+        REFERENCES silver.sellers(seller_id)
+);
+
+
+-- =========================================================
+-- 8. CREATE RETURNS TABLE
+-- =========================================================
+
+CREATE TABLE silver.returns
+(
+    return_id              NVARCHAR(50),
+    order_id               NVARCHAR(50),
+    order_item_id          NVARCHAR(50),
+    return_requested_date  DATE,
+    days_to_return         INT,
+    return_reason          NVARCHAR(50),
+    return_status          NVARCHAR(50),
+
+    CONSTRAINT PK_returns
+        PRIMARY KEY (return_id),
+
+    -- Each return must reference a valid order item.
+    CONSTRAINT FK_returns_order_items
+        FOREIGN KEY (order_id, order_item_id)
+        REFERENCES silver.order_items(order_id, order_item_id)
+);
+
+
+-- =========================================================
+-- 9. CREATE REFUNDS TABLE
+-- =========================================================
+
+CREATE TABLE silver.refunds
+(
+    return_id       NVARCHAR(50),
+    refund_mode     NVARCHAR(50),
+    refund_amount   DECIMAL(12,2),
+    refund_days     INT,
+
+    CONSTRAINT PK_refunds
+        PRIMARY KEY (return_id),
+
+    -- A refund can only exist for a recorded return.
+    CONSTRAINT FK_refunds_returns
+        FOREIGN KEY (return_id)
+        REFERENCES silver.returns(return_id)
+);
+
+
+-- =========================================================
+-- 10. CREATE REVIEWS TABLE
+-- =========================================================
+
+CREATE TABLE silver.reviews
+(
+    order_id        NVARCHAR(50),
+    order_item_id   NVARCHAR(50),
+    review_rating   DECIMAL(3,2),
+
+    -- Allows at most one review per order item.
+    CONSTRAINT PK_reviews
+        PRIMARY KEY (order_id, order_item_id),
+
+    CONSTRAINT FK_reviews_order_items
+        FOREIGN KEY (order_id, order_item_id)
+        REFERENCES silver.order_items(order_id, order_item_id)
+);
