@@ -12,9 +12,7 @@
     maintain referential integrity between related entities.
 */
 
--- =========================================================
 -- CREATE SILVER SCHEMA
--- =========================================================
 
 IF NOT EXISTS (
     SELECT 1
@@ -24,9 +22,8 @@ IF NOT EXISTS (
     EXEC('CREATE SCHEMA silver');
 
 
--- =========================================================
--- 2. DROP EXISTING TABLES
--- =========================================================
+-- DROP EXISTING TABLES
+
 -- Child tables must be dropped before parent tables because
 -- foreign keys prevent referenced tables from being dropped.
 
@@ -55,9 +52,7 @@ IF OBJECT_ID('silver.sellers', 'U') IS NOT NULL
     DROP TABLE silver.sellers;
 
 
--- =========================================================
--- 3. CREATE CUSTOMERS TABLE
--- =========================================================
+-- CREATE CUSTOMERS TABLE
 
 CREATE TABLE silver.customers
 (
@@ -76,9 +71,7 @@ CREATE TABLE silver.customers
 );
 
 
--- =========================================================
--- 4. CREATE ORDERS TABLE
--- =========================================================
+-- CREATE ORDERS TABLE
 
 CREATE TABLE silver.orders
 (
@@ -107,10 +100,7 @@ CREATE TABLE silver.orders
         REFERENCES silver.customers(customer_id)
 );
 
-
--- =========================================================
--- 5. CREATE PRODUCTS TABLE
--- =========================================================
+-- CREATE PRODUCTS TABLE
 
 CREATE TABLE silver.products
 (
@@ -127,9 +117,7 @@ CREATE TABLE silver.products
 );
 
 
--- =========================================================
--- 6. CREATE SELLERS TABLE
--- =========================================================
+-- CREATE SELLERS TABLE
 
 CREATE TABLE silver.sellers
 (
@@ -142,9 +130,7 @@ CREATE TABLE silver.sellers
 );
 
 
--- =========================================================
--- 7. CREATE ORDER ITEMS TABLE
--- =========================================================
+-- CREATE ORDER ITEMS TABLE
 
 CREATE TABLE silver.order_items
 (
@@ -184,9 +170,7 @@ CREATE TABLE silver.order_items
 );
 
 
--- =========================================================
--- 8. CREATE RETURNS TABLE
--- =========================================================
+-- CREATE RETURNS TABLE
 
 CREATE TABLE silver.returns
 (
@@ -208,9 +192,7 @@ CREATE TABLE silver.returns
 );
 
 
--- =========================================================
--- 9. CREATE REFUNDS TABLE
--- =========================================================
+--  CREATE REFUNDS TABLE
 
 CREATE TABLE silver.refunds
 (
@@ -229,9 +211,7 @@ CREATE TABLE silver.refunds
 );
 
 
--- =========================================================
--- 10. CREATE REVIEWS TABLE
--- =========================================================
+-- CREATE REVIEWS TABLE
 
 CREATE TABLE silver.reviews
 (
